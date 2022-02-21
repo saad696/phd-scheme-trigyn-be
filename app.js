@@ -2,7 +2,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const authRoutes = require("./routes/auth");
 const roleRoutes = require("./routes/role");
-const adminUserRoutes = require("./routes/admin_user")
+const adminUserRoutes = require("./routes/admin_user");
 const mongoose = require("mongoose");
 const path = require("path");
 
@@ -26,7 +26,7 @@ app.use((req, res, next) => {
 
 app.use("/auth", authRoutes);
 app.use("/role", roleRoutes);
-app.use("/adminuser",adminUserRoutes)
+app.use("/admin-user", adminUserRoutes);
 
 app.use("/", (req, res, next) => {
     res.status(405).json({ message: "Not allowed" });
@@ -43,10 +43,10 @@ app.use((error, req, res, next) => {
 });
 
 mongoose
-  .connect(
-    "mongodb+srv://someguy:someguy@cluster0.dyjns.mongodb.net/todo?retryWrites=true&w=majority"
-  )
-  .then((result) => {
-    app.listen(8080);
-  })
-  .catch((err) => console.log(err));
+    .connect(
+        "mongodb+srv://nutryAdmin:GEbMVHwrNIFvzblz@cluster0.m2dtm.mongodb.net/nutry?retryWrites=true&w=majority"
+    )
+    .then((result) => {
+        app.listen(8080);
+    })
+    .catch((err) => console.log(err));
