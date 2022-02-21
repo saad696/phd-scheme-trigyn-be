@@ -46,6 +46,6 @@ router.post(
 
 router.post("/login", authController.login);
 router.get("/get-user", isAuth, authController.getUser);
-router.delete("/delete-user/:id", isAuth, authController.deleteUser);
+// router.delete("/delete-user/:id", isAuth, authController.deleteUser);
 
 module.exports = router;

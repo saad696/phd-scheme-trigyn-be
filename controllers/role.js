@@ -66,7 +66,7 @@ exports.createRole = (req, res, next) => {
         Role.find({ role: "admin" }).then((data) => {
             console.log(data);
             if (data.length === 0) {
-                createRoleHelper(req, res);
+                createRoleHelper(req, res,next);
             } else {
                 res.status(406).json({
                     message: "User with a role of Admin already exists!",
