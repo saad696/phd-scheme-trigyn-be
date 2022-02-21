@@ -6,6 +6,7 @@ const ObjectId = require("mongodb").ObjectId;
 
 exports.signup = (req, res, next) => {
     const errors = validationResult(req);
+    
     if (!errors.isEmpty()) {
         const error = new Error("Validation failed");
         error.statusCode = 400;
