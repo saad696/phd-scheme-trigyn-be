@@ -1,5 +1,6 @@
 const Roles = require("../model/role");
 const adminUser = require("../model/adminUser.model");
+const authUser = require("../model/authUser");
 const { validationResult } = require("express-validator");
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
@@ -36,9 +37,16 @@ const createUser = async (req, res) => {
 
   try {
     req.body.setpassword = await bcrypt.hash(req.body.setpassword, saltRounds);
-    const createUser = await new adminUser(req.body);
+    const createUser = new adminUser(req.body);
     createUser.save();
-    console.log("this is create user", createUser);
+
+    const toAuth = new authUser({
+      _id: createUser._id,
+      password: createUser.setpassword,
+      name: createUser.username,
+      email: "somerandom@gail.com", // this has to fixed but for now keep it like this
+    });
+    toAuth.save();
     return res.status(200).json(createUser);
   } catch (err) {
     return res.status(400).json(err);

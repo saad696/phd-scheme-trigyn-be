@@ -30,3 +30,4 @@ const authUserSchema = new Schema(
 
 authUserSchema.plugin(require("mongoose-autopopulate"));
 module.exports = mongoose.model("AuthUser", authUserSchema);
+
