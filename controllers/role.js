@@ -66,7 +66,7 @@ exports.createRole = (req, res, next) => {
         Role.find({ role: "admin" }).then((data) => {
             console.log(data);
             if (data.length === 0) {
-                createRoleHelper(req, res,next);
+                createRoleHelper(req, res, next);
             } else {
                 res.status(406).json({
                     message: "User with a role of Admin already exists!",
@@ -80,7 +80,7 @@ exports.createRole = (req, res, next) => {
 
 exports.getRoles = (req, res, next) => {
     const curPage = req.query.page || 1;
-    const perPage = 3;
+    const perPage = 5;
     let totalItems;
 
     Role.find()
