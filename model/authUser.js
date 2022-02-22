@@ -3,10 +3,6 @@ const Schema = mongoose.Schema;
 
 const authUserSchema = new Schema(
     {
-        email: {
-            type: String,
-            required: true,
-        },
         password: {
             type: String,
             required: true,
@@ -16,6 +12,7 @@ const authUserSchema = new Schema(
             required: true,
         },
         token: String,
+        role:{type:String,default:"superadmin"},
         rolesCreated: [
             {
                 type: Schema.Types.ObjectId,
