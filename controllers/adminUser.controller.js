@@ -16,8 +16,8 @@ const findUser = async (mobileNumber) => {
   }
 };
 
-const checkForSameRole = async (roleId) => {
-  const find = await adminUser.findOne({ role: roleId });
+const checkForSameRole = async (role) => {
+  const find = await adminUser.findOne({role:role ,roleName: "admin", status:"active" });
   if (find) {
     return true;
   } else {
@@ -26,7 +26,6 @@ const checkForSameRole = async (roleId) => {
 };
 
 // real controllers
-
 const createUser = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
