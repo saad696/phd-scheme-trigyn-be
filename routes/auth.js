@@ -1,6 +1,5 @@
 const express = require("express");
 const { body } = require("express-validator/check");
-const AuthUser = require("../model/authUser");
 
 const authController = require("../controllers/auth");
 const isAuth = require("../middleware/is-auth");
@@ -12,19 +11,6 @@ const regex = new RegExp(/^[A-Za-z0-9 ]+$/);
 router.post(
     "/signup",
     [
-        body("email")
-            .isEmail()
-            .withMessage("Not valid email!")
-            .custom((value, { req }) => {
-                return AuthUser.findOne({ email: value }).then((userDoc) => {
-                    if (userDoc) {
-                        return Promise.reject(
-                            "User with this email already exsists!"
-                        );
-                    }
-                });
-            })
-            .normalizeEmail(),
         body("password").trim().isLength({ min: 5 }),
         body("name")
             .trim()

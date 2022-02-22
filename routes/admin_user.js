@@ -17,49 +17,32 @@ const router = express.Router();
 // setusername: String,
 
 router.post(
-    "/create-admin-user",
-    [
-        check(
-            "username",
-            "User Name length should be 3 to 15 characters"
-        ).isLength({ min: 0, max: 50 }),
-        check(
-            "status",
-            "status length should be between 0 to 50 characters"
-        ).isLength({
-            min: 0,
-            max: 10,
-        }),
-        check(
-            "mobileNumber",
-            "Mobile number should contains 10 digits"
-        ).isLength({
-            min: 10,
-            max: 10,
-        }),
-        check("role", "role length should be 8 to 10 characters").isLength({
-            min: 3,
-            max: 30,
-        }),
-        check(
-            "setPassword",
-            "Password length should be 5 to 10 characters"
-        ).isLength({
-            min: 5,
-            max: 30,
-        }),
-        check(
-            "setUsername",
-            "setusername length should be 3 to 10 characters"
-        ).isLength({
-            min: 3,
-            max: 30,
-        }),
-    ],
-    isAuth,
-    adminUserController.createUser
+  "/create-admin-user",
+  [
+    check("username", "User Name should not be empty").isLength({ min: 1 }),
+    check("status", "status should not be empty").isLength({
+      min: 1,
+    }),
+    check("mobileNumber", "Mobile number should contains 10 digits").isLength({
+      min: 10,
+      max: 10,
+    }),
+    check("role", "role should not be empty").isLength({
+      min: 1,
+    }),
+    check("setPassword", "Password should not be empty").isLength({
+      min: 1,
+    }),
+    check("setUsername", "setusername should not be empty").isLength({
+      min: 1,
+    }),
+  ],
+  isAuth,
+  adminUserController.createUser
 );
 
 router.get("/get-roles", isAuth, adminUserController.getRoles);
+router.get("/filter-by-roles/:role", isAuth, adminUserController.filterRoles);
+router.get("/get-all-admin-users",isAuth,adminUserController.getAllAdminUsers);
 
 module.exports = router;
