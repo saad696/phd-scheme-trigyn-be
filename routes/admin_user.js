@@ -33,10 +33,10 @@ router.post(
         check("role", "role should not be empty").isLength({
             min: 1,
         }),
-        check("setPassword", "Password should not be empty").isLength({
+        check("password", "Password should not be empty").isLength({
             min: 1,
         }),
-        check("setUsername", "setusername should not be empty").isLength({
+        check("username", "setusername should not be empty").isLength({
             min: 1,
         }),
     ],
@@ -45,7 +45,6 @@ router.post(
 );
 
 router.get("/get-roles", isAuth, adminUserController.getRoles);
-router.get("/filter-by-role/:role", isAuth, adminUserController.filterRoles);
-router.get("/get-users", isAuth, adminUserController.getAllAdminUsers);
+router.get("/get-users/:role", isAuth, adminUserController.getAllAdminUsers);
 
 module.exports = router;

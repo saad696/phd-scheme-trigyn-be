@@ -2,7 +2,7 @@ const mongose = require("mongoose");
 
 const adminUserModel = new mongose.Schema(
     {
-        username: {
+        name: {
             type: String,
             required: true,
         },
@@ -16,11 +16,11 @@ const adminUserModel = new mongose.Schema(
             type: Number,
             required: true,
         },
-        setPassword: {
+        password: {
             type: String,
             required: true,
         },
-        setUsername: {
+        username: {
             type: String,
             required: true,
         },
