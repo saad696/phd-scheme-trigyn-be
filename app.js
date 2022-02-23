@@ -12,16 +12,13 @@ app.use(bodyParser.json());
 app.use("/images", express.static(path.join(__dirname, "images")));
 
 app.use((req, res, next) => {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader(
-        "Access-Control-Allow-Methods",
-        "GET, POST, PUT, PATCH, DELETE"
-    );
-    res.setHeader(
-        "Access-Control-Allow-Headers",
-        "Content-Type, Authorization"
-    );
-    next();
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, PATCH, DELETE"
+  );
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  next();
 });
 
 app.use("/auth", authRoutes);
@@ -29,24 +26,24 @@ app.use("/role", roleRoutes);
 app.use("/admin-user", adminUserRoutes);
 
 app.use("/", (req, res, next) => {
-    res.status(405).json({ message: "Not allowed" });
+  res.status(405).json({ message: "Not allowed" });
 });
 
 app.use((error, req, res, next) => {
-    const status = error.statusCode || 500;
-    let message = error.message;
-    const data = error.data;
-    if (data && data[0].msg) {
-        message = data[0].msg;
-    }
-    res.status(status).json({ message, data });
+  const status = error.statusCode || 500;
+  let message = error.message;
+  const data = error.data;
+  if (data && data[0].msg) {
+    message = data[0].msg;
+  }
+  res.status(status).json({ message, data });
 });
 
 mongoose
-    .connect(
-        "mongodb+srv://nutryAdmin:GEbMVHwrNIFvzblz@cluster0.m2dtm.mongodb.net/nutry?retryWrites=true&w=majority"
-    )
-    .then((result) => {
-        app.listen(8080);
-    })
-    .catch((err) => console.log(err));
+  .connect(
+    "mongodb+srv://someguy:someguy@cluster0.dyjns.mongodb.net/todo?retryWrites=true&w=majority"
+  )
+  .then((result) => {
+    app.listen(8080);
+  })
+  .catch((err) => console.log(err));
