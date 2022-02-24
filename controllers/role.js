@@ -15,54 +15,60 @@ exports.createRole = async (req, res, next) => {
         throw error;
     }
 
-    try {
-        const checkForRole = await Department.find({
-            _id: req.body.department[0].id,
-            roles: { $elemMatch: { roleName: req.body.role } },
-        });
+  try {
+    const checkForRole = await Department.find({
+      _id: req.body.department[0]._id,
+      roles: { $elemMatch: { roleName: req.body.role } },
+    });
+    if (checkForRole.length > 0) {
+      return res.status(409).json({
+        message: `${req.body.role} is present in ${req.body.department[0].name}`,
+      });
+    } else {
+      const role = new Role(req.body);
+      const userInAuth = await AuthUser.findById(
+        { _id: req.body.admin },
+        { rolesCreated: 1 }
+      );
 
-        if (checkForRole.length > 0) {
-            return res
-                .status(409)
-                .json({
-                    message: `${req.body.role} is present in ${req.body.department[0].name}`,
-                });
-        } else {
-            const role = new Role({ ...req.body, admin: req.userId });
+      if (userInAuth) {
+        return res
+          .status(404)
+          .json({ message: `User not found with id: ${req.body.admin}` });
+      }
 
-            const inDepartment = await Department.findById(
-                { _id: req.body.department[0].id },
-                { roles: 1 }
-            );
-            inDepartment.roles.push({ roleName: role.role, roleId: role._id });
-            inDepartment.save();
-            role.save();
-            return res.status(200).json(role);
-        }
-    } catch (err) {
-        console.log(err);
-        res.status(500).json({ message: "something went wrong" });
+
+      userInAuth.rolesCreated.push(role._id);
+
+      const inDepartment = await Department.findById(
+        { _id: req.body.department[0]._id },
+        { roles: 1 }
+      );
+      inDepartment.roles.push({ roleName: role.role, _id: role._id });
+      inDepartment.save();
+      role.save();
+      userInAuth.save();
+      return res.status(200).json(role);
     }
 };
 
 exports.getDepartments = async (req, res) => {
-    try {
-        const departments = await Department.find(
-            {},
-            { _id: 1, departmentName: 1 }
-        );
-        if (departments.length > 0) {
-            return res.status(200).json(departments);
-        } else {
-            const error = new Error(`run the department seeds`);
-            error.statusCode = 409;
-            return res.status(409).json(error);
-        }
-    } catch (err) {
-        if (!err.statusCode) {
-            err.statusCode = 500;
-        }
+  try {
+    const departments = await Department.find(
+      {},
+      { _id: 1, departmentName: 1 }
+    );
+    if (departments.length > 0) {
+      return res.status(200).json(departments);
+    } else {
+      return res.status(409).json(`run the department seeds`);
     }
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+      return res.status(500).json(err);
+    }
+  }
 };
 
 exports.getRoles = (req, res, next) => {
@@ -142,9 +148,21 @@ exports.updateRoles = (req, res, next) => {
         });
 };
 
-exports.deleteRoles = (req, res, next) => {
-    const roleId = req.params.roleId;
-    let hasCreated;
+exports.deleteRoles = async (req, res, next) => {
+  const roleId = req.params.roleId;
+
+  const role = await Role.findById({ _id: roleId }, { department: 1 });
+  const department = await Department.findById(
+    { _id: role.department[0]._id },
+    { roles: 1 }
+  );
+
+  if (department != null) {
+    department.roles.pull({ _id: roleId });
+    department.save();
+  }
+
+  let hasCreated;
 
     AuthUser.findById(req.userId)
         .then((user) => {

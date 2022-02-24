@@ -25,6 +25,7 @@ const adminUserModel = new mongose.Schema(
             required: true,
         },
         createdBy: mongose.Schema.Types.ObjectId,
+        modifiedBy: mongose.Schema.Types.ObjectId,
     },
     { timestamps: true }
 );

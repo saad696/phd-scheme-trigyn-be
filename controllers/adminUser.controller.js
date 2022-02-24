@@ -31,135 +31,158 @@ const googleSheetsapi = async (name, password) => {
 // helper code
 
 const findUser = async (mobileNumber) => {
-    const user = await adminUser.findOne({ mobileNumber: mobileNumber });
-    if (user) {
-        return true;
-    } else {
-        return false;
-    }
+  const user = await adminUser.findOne({ mobileNumber: mobileNumber });
+  if (user) {
+    return true;
+  } else {
+    return false;
+  }
 };
 
 // real controllers
 const createUser = async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        const error = new Error("Validation failed");
-        error.statusCode = 400;
-        error.data = errors.array();
-        return res.status(400).json(error);
-    }
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const error = new Error("Validation failed");
+    error.statusCode = 400;
+    error.data = errors.array();
+    return res.status(400).json(error);
+  }
 
-    const { mobileNumber } = req.body;
+  // delete it if you want
 
-    // checking for user with same phone number
-    const findForSameUser = await findUser(mobileNumber);
-    if (findForSameUser) {
-        return res
-            .status(409)
-            .json({ message: "User already present with this phone number" });
-    }
+  // checking for same role exsitence
+  // const forSameRole = await checkForSameRole(req.body.role);
+  // if (forSameRole) {
+  //   return res.status(409).json({ message: "This Role Already Exists!" });
+  // }
 
-    try {
-        const password = req.body.password;
-        req.body.password = await bcrypt.hash(req.body.password, saltRounds);
+  const { mobileNumber } = req.body;
 
-        const roleName = await Roles.findOne(
-            { _id: req.body.role },
-            { role: 1 }
-        );
-        req.body.roleName = roleName.role;
-        req.body.createdBy = req.userId;
+  // checking for user with same phone number
+  const findForSameUser = await findUser(mobileNumber);
+  if (findForSameUser) {
+    const error = new Error("User already present with this phone number");
+    error.statusCode = 409;
+    return res.status(409).json(error);
+  }
 
-        const createUser = new adminUser(req.body);
-        createUser.save();
+  try {
+    req.body.setPassword = await bcrypt.hash(req.body.setPassword, saltRounds);
 
-        const toAuth = new authUser({
-            _id: createUser._id,
-            password: createUser.password,
-            name: createUser.username,
-            role: roleName.role,
-        });
-        toAuth.save();
+    const roleName = await Roles.findOne({ _id: req.body.role }, { role: 1 });
+    req.body.roleName = roleName.role;
+    req.body.createdBy = req.userId;
+    req.body.modifiedBy = req.userId;
 
-        // this is the method to connect with googlesheets api to push username and password
-        // googleSheetsapi(createUser.username, password);
-        return res.status(200).json({
-            message: `Account for ${createUser.username} has been created.`,
-        });
-    } catch (err) {
-        console.log(err);
-        return res.status(400).json(err);
-    }
+    const createUser = new adminUser(req.body);
+    createUser.save();
+
+    const toAuth = new authUser({
+      _id: createUser._id,
+      password: createUser.setPassword,
+      name: createUser.username,
+      role: roleName.role,
+    });
+    toAuth.save();
+    return res.status(200).json({
+      message: `Account for ${createUser.username} has been created.`,
+    });
+  } catch (err) {
+    return res.status(400).json(err);
+  }
 };
 
 const getRoles = async (req, res) => {
-    const data = await Roles.find(
-        { admin: req.userId, status: "active" },
-        { _id: 1, role: 1, department: 1 }
-    );
-    if (data.length > 0) {
-        return res.status(200).json(data);
+  const data = await Roles.find(
+    { admin: req.userId, status: "active" },
+    { _id: 1, role: 1 }
+  );
+  if (data.length > 0) {
+    return res.status(200).json(data);
+  } else {
+    const error = new Error("No Data");
+    error.statusCode = 400;
+    return res.status(400).json(error);
+  }
+};
+
+const filterRoles = async (req, res) => {
+  const { role } = req.params;
+  console.log(role);
+  try {
+    let users;
+
+    if (role.toLowerCase() === "all") {
+      users = await adminUser.find();
     } else {
-        const error = new Error("No Data");
-        error.statusCode = 400;
-        return res.status(400).json(error);
+      users = await adminUser.find(
+        { roleName: role },
+        { _id: 1, username: 1, status: 1, mobileNumber: 1, roleName: 1 }
+      );
     }
+
+    if (users.length > 0) {
+      return res.status(200).json(users);
+    } else {
+      return res
+        .status(404)
+        .json({ message: "No user has been assigned this role yet!" });
+    }
+  } catch (err) {
+    return res.status(400).json(err);
+  }
 };
 
 const getAllAdminUsers = async (req, res) => {
-    const role = req.params.role || "all";
-    const curPage = req.query.page || 1;
-    const perPage = 5;
-    let totalItems;
-    let adminUsers;
+  const curPage = req.query.page || 1;
+  const perPage = 5;
+  let totalItems;
+  try {
+    const totalEntries = await adminUser.countDocuments();
+    totalItems = totalEntries;
 
-    try {
-        const totalEntries = await adminUser.countDocuments();
-        if (totalEntries === 0) {
-            res.status(200).json({ message: "no users created yet!" });
-            return;
+    const adminUsers = await adminUser
+      .find(
+        { createdBy: req.userId },
+        {
+          _id: 1,
+          username: 1,
+          status: 1,
+          mobileNumber: 1,
+          roleName: 1,
+          role: 1,
         }
-        totalItems = totalEntries;
-        console.log(role);
-        if (role.toLowerCase() === "all") {
-            console.log("in all");
-            adminUsers = await adminUser
-                .find(
-                    {},
-                    {
-                        _id: 1,
-                        username: 1,
-                        status: 1,
-                        mobileNumber: 1,
-                        roleName: 1,
-                    }
-                )
-                .skip((curPage - 1) * perPage)
-                .limit(perPage);
-        } else {
-            console.log("in role");
-            adminUsers = await adminUser
-                .find(
-                    { roleName: role },
-                    {
-                        _id: 1,
-                        username: 1,
-                        status: 1,
-                        mobileNumber: 1,
-                        roleName: 1,
-                    }
-                )
-                .skip((curPage - 1) * perPage)
-                .limit(perPage);
+      )
+      .skip((curPage - 1) * perPage)
+      .limit(perPage);
 
-            console.log(adminUsers);
-        }
+    if (adminUsers.length > 0) {
+      const roles = [];
+      for (let i = 0; i < adminUsers.length; i++) {
+        const roleFromId = await Roles.findById({
+          _id: adminUsers[i].role,
+        });
+        roles.push({
+          _id: adminUsers[i]._id,
+          username: adminUsers[i].username,
+          status: adminUsers[i].status,
+          role: adminUsers[i].role,
+          roleName: adminUsers[i].roleName,
+          mobileNumber: adminUsers[i].mobileNumber,
+          departmentName: roleFromId.department[0].name,
+        });
+      }
 
-        return res.status(200).json({ users: adminUsers, totalItems, perPage });
-    } catch (err) {
-        console.log(err);
-        return res.status(400).json(err);
+      return res.status(200).json({ users: roles, totalItems, perPage });
+    } else {
+      const error = new Error(`No User Has Been Created ,please Create One`);
+      error.statusCode = 409;
+      return res.status(409).json(error);
     }
+  } catch (err) {
+    return res.status(400).json(err);
+  }
 };
 
 module.exports = { createUser, getRoles, getAllAdminUsers };
