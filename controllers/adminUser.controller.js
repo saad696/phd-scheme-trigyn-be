@@ -39,15 +39,6 @@ const findUser = async (mobileNumber) => {
     }
 };
 
-const checkForSameRole = async (role) => {
-    const find = await adminUser.findOne({ role: role, roleName: "admin" });
-    if (find) {
-        return true;
-    } else {
-        return false;
-    }
-};
-
 // real controllers
 const createUser = async (req, res) => {
     const errors = validationResult(req);
@@ -56,12 +47,6 @@ const createUser = async (req, res) => {
         error.statusCode = 400;
         error.data = errors.array();
         return res.status(400).json(error);
-    }
-
-    // checking for same role exsitence
-    const forSameRole = await checkForSameRole(req.body.role);
-    if (forSameRole) {
-        return res.status(409).json({ message: "This Role Already Exists!" });
     }
 
     const { mobileNumber } = req.body;
@@ -97,7 +82,7 @@ const createUser = async (req, res) => {
         toAuth.save();
 
         // this is the method to connect with googlesheets api to push username and password
-        googleSheetsapi(createUser.username, password);
+        // googleSheetsapi(createUser.username, password);
         return res.status(200).json({
             message: `Account for ${createUser.username} has been created.`,
         });
@@ -110,7 +95,7 @@ const createUser = async (req, res) => {
 const getRoles = async (req, res) => {
     const data = await Roles.find(
         { admin: req.userId, status: "active" },
-        { _id: 1, role: 1 }
+        { _id: 1, role: 1, department: 1 }
     );
     if (data.length > 0) {
         return res.status(200).json(data);
