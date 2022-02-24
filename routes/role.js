@@ -6,18 +6,13 @@ const isAuth = require("../middleware/is-auth");
 
 const router = express.Router();
 const regex = new RegExp(/^[A-Za-z0-9 ]+$/);
-
 router.post(
   "/create",
   [
-    body("department._id")
-      .trim()
-      .notEmpty()
-      .withMessage("Department id field is required"),
-    body("department.name")
-      .trim()
-      .notEmpty()
-      .withMessage("Department name field is required"),
+        body("department")
+            .isArray()
+            .isLength({ min: 1 })
+            .withMessage("Department field is required"),
     body("role")
       .trim()
       .notEmpty()

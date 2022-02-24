@@ -10,7 +10,7 @@ const departments = [
 
 mongoose
   .connect(
-    "mongodb+srv://someguy:someguy@cluster0.dyjns.mongodb.net/todo?retryWrites=true&w=majority"
+    "mongodb+srv://nutryAdmin:GEbMVHwrNIFvzblz@cluster0.m2dtm.mongodb.net/nutry?retryWrites=true&w=majority"
   )
   .then(() => {
     console.log("DB CONNECTED ...........");
