@@ -17,26 +17,37 @@ exports.createRole = async (req, res, next) => {
 
   try {
     const checkForRole = await Department.find({
-      _id: req.body.department.id,
+      _id: req.body.department._id,
       roles: { $elemMatch: { roleName: req.body.role } },
     });
-
     if (checkForRole.length > 0) {
-      const error = new Error(
-        `${req.body.role} is present in ${req.body.department.name}`
-      );
-      error.statusCode = 409;
-      return res.status(409).json(error);
+      return res.status(409).json({
+        message: `${req.body.role} is present in ${req.body.department.name}`,
+      });
     } else {
       const role = new Role(req.body);
+      const userInAuth = await AuthUser.findById(
+        { _id: req.body.admin },
+        { rolesCreated: 1 }
+      );
+
+      if (userInAuth) {
+        return res
+          .status(404)
+          .json({ message: `User not found with id: ${req.body.admin}` });
+      }
+
+
+      userInAuth.rolesCreated.push(role._id);
 
       const inDepartment = await Department.findById(
-        { _id: req.body.department.departmentId },
+        { _id: req.body.department._id },
         { roles: 1 }
       );
-      inDepartment.roles.push({ roleName: role.role, roleId: role._id });
+      inDepartment.roles.push({ roleName: role.role, _id: role._id });
       inDepartment.save();
       role.save();
+      userInAuth.save();
       return res.status(200).json(role);
     }
   } catch (err) {}
@@ -51,15 +62,12 @@ exports.getDepartments = async (req, res) => {
     if (departments.length > 0) {
       return res.status(200).json(departments);
     } else {
-      const error = new Error(
-        `run the department seeds`
-      );
-      error.statusCode = 409;
-      return res.status(409).json(error);
+      return res.status(409).json(`run the department seeds`);
     }
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
+      return res.status(500).json(err);
     }
   }
 };
@@ -141,8 +149,20 @@ exports.updateRoles = (req, res, next) => {
     });
 };
 
-exports.deleteRoles = (req, res, next) => {
+exports.deleteRoles = async (req, res, next) => {
   const roleId = req.params.roleId;
+
+  const role = await Role.findById({ _id: roleId }, { department: 1 });
+  const department = await Department.findById(
+    { _id: role.department[0]._id },
+    { roles: 1 }
+  );
+
+  if (department != null) {
+    department.roles.pull({ _id: roleId });
+    department.save();
+  }
+
   let hasCreated;
 
   AuthUser.findById(req.userId)

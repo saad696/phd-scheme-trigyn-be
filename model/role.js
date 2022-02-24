@@ -9,7 +9,6 @@ const roleSchema = new Schema(
   {
     department:[{
       name: { type: String },
-      id: { type: Schema.Types.ObjectId }
     }],
     role: {
       type: String,

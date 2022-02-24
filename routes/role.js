@@ -10,7 +10,7 @@ const regex = new RegExp(/^[A-Za-z0-9 ]+$/);
 router.post(
   "/create",
   [
-    body("department.id")
+    body("department._id")
       .trim()
       .notEmpty()
       .withMessage("Department id field is required"),
