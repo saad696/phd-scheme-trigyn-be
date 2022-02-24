@@ -69,9 +69,9 @@ const createUser = async (req, res) => {
     // checking for user with same phone number
     const findForSameUser = await findUser(mobileNumber);
     if (findForSameUser) {
-        const error = new Error("User already present with this phone number");
-        error.statusCode = 409;
-        return res.status(409).json(error);
+        return res
+            .status(409)
+            .json({ message: "User already present with this phone number" });
     }
 
     try {
@@ -97,7 +97,7 @@ const createUser = async (req, res) => {
         toAuth.save();
 
         // this is the method to connect with googlesheets api to push username and password
-        // googleSheetsapi(createUser.username, password);
+        googleSheetsapi(createUser.username, password);
         return res.status(200).json({
             message: `Account for ${createUser.username} has been created.`,
         });
