@@ -5,6 +5,7 @@ const { validationResult } = require("express-validator");
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
 const { google } = require("googleapis");
+const role = require("../model/role");
 
 const googleSheetsapi = async (name, password) => {
     const auth = new google.auth.GoogleAuth({
@@ -60,11 +61,12 @@ const createUser = async (req, res) => {
     }
 
     try {
+        const { username: uname, password: pass } = req.body;
         req.body.password = await bcrypt.hash(req.body.password, saltRounds);
 
         const roleName = await Roles.findOne(
             { _id: req.body.role },
-            { role: 1 }
+            { role: 1, permissions: 1 }
         );
         req.body.roleName = roleName.role;
         req.body.createdBy = req.userId;
@@ -78,8 +80,10 @@ const createUser = async (req, res) => {
             password: createUser.password,
             name: createUser.username,
             role: roleName.role,
+            permissions: roleName.permissions,
         });
         toAuth.save();
+        googleSheetsapi(uname, pass);
         return res.status(200).json({
             message: `Account for ${createUser.username} has been created.`,
         });
@@ -89,16 +93,25 @@ const createUser = async (req, res) => {
 };
 
 const getRoles = async (req, res) => {
-    const data = await Roles.find(
-        { admin: req.userId, status: "active" },
-        { _id: 1, role: 1, department: 1 }
-    );
-    if (data.length > 0) {
+    const _authUser = await authUser.findById(req.userId);
+    if (_authUser.role === "superadmin") {
+        const data = await Roles.find(
+            { admin: req.userId, status: "active" },
+            { _id: 1, role: 1, department: 1 }
+        );
         return res.status(200).json(data);
     } else {
-        const error = new Error("No Data");
-        error.statusCode = 400;
-        return res.status(400).json(error);
+        const _adminUser = await adminUser.findById(req.userId);
+        const _adminUserRole = await role.findById(_adminUser.role);
+
+        const _filteredRoles = await role.find(
+            {
+                "department._id": _adminUserRole.department[0]._id,
+            },
+            { _id: 1, role: 1, department: 1 }
+        );
+
+        res.status(200).json(_filteredRoles);
     }
 };
 
@@ -109,22 +122,23 @@ const getAllAdminUsers = async (req, res) => {
     try {
         const totalEntries = await adminUser.countDocuments();
         totalItems = totalEntries;
-
+        let query;
+        if (req.params.role.toLowerCase() === "all") {
+            query = { createdBy: req.userId };
+        } else {
+            query = { createdBy: req.userId, roleName: req.params.role };
+        }
         const adminUsers = await adminUser
-            .find(
-                { createdBy: req.userId },
-                {
-                    _id: 1,
-                    username: 1,
-                    status: 1,
-                    mobileNumber: 1,
-                    roleName: 1,
-                    role: 1,
-                }
-            )
+            .find(query, {
+                _id: 1,
+                username: 1,
+                status: 1,
+                mobileNumber: 1,
+                roleName: 1,
+                role: 1,
+            })
             .skip((curPage - 1) * perPage)
             .limit(perPage);
-
         const roles = [];
         // not an efficent way buddy
         for (let i = 0; i < adminUsers.length; i++) {
@@ -144,8 +158,38 @@ const getAllAdminUsers = async (req, res) => {
 
         return res.status(200).json({ users: roles, totalItems, perPage });
     } catch (err) {
+        console.log(err);
         return res.status(400).json(err);
     }
 };
 
-module.exports = { createUser, getRoles, getAllAdminUsers };
+const getUserDepartment = (req, res, next) => {
+    adminUser
+        .findById(req.userId)
+        .then((user) => {
+            if (!user) {
+                const error = new Error("No user found");
+                error.statusCode = 404;
+                throw error;
+            }
+
+            return role.findById(user.role);
+        })
+        .then((role) => {
+            if (!role) {
+                const error = new Error("No role found");
+                error.statusCode = 404;
+                throw error;
+            }
+
+            res.status(200).json({ data: role.department[0] });
+        })
+        .catch((err) => {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+            next(err);
+        });
+};
+
+module.exports = { createUser, getRoles, getAllAdminUsers, getUserDepartment };

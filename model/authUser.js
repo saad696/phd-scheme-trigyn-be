@@ -12,13 +12,19 @@ const authUserSchema = new Schema(
             required: true,
         },
         token: String,
-        role:{type:String,default:"superadmin"},
+        role: { type: String, default: "superadmin" },
         rolesCreated: [
             {
                 type: Schema.Types.ObjectId,
-                required: true,
                 ref: "Role",
                 // autopopulate: true,
+            },
+        ],
+        permissions: [
+            {
+                _id: Schema.Types.ObjectId,
+                name: String,
+                selected: Boolean,
             },
         ],
     },
@@ -27,4 +33,3 @@ const authUserSchema = new Schema(
 
 authUserSchema.plugin(require("mongoose-autopopulate"));
 module.exports = mongoose.model("AuthUser", authUserSchema);
-
