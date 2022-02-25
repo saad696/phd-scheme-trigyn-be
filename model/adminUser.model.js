@@ -1,5 +1,5 @@
 const mongose = require("mongoose");
-
+// 
 const adminUserModel = new mongose.Schema(
     {
         name: {
