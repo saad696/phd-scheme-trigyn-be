@@ -17,32 +17,49 @@ const router = express.Router();
 // setusername: String,
 
 router.post(
-    "/create-admin-user",
-    [
-        check("username", "User Name should not be empty").isLength({ min: 1 }),
-        check("status", "status should not be empty").isLength({
-            min: 1,
-        }),
-        check(
-            "mobileNumber",
-            "Mobile number should contains 10 digits"
-        ).isLength({
-            min: 10,
-            max: 10,
-        }),
-        check("role", "role should not be empty").isLength({
-            min: 1,
-        }),
-        check("password", "Password should not be empty").isLength({
-            min: 1,
-        }),
-        check("username", "setusername should not be empty").isLength({
-            min: 1,
-        }),
-    ],
-    isAuth,
-    adminUserController.createUser
+  "/create-admin-user",
+  [
+    check("username", "User Name should not be empty").isLength({ min: 1 }),
+    check("status", "status should not be empty").isLength({
+      min: 1,
+    }),
+    check("mobileNumber", "Mobile number should contains 10 digits").isLength({
+      min: 10,
+      max: 10,
+    }),
+    check("role", "role should not be empty").isLength({
+      min: 1,
+    }),
+    check("password", "Password should not be empty").isLength({
+      min: 1,
+    }),
+  ],
+  isAuth,
+  adminUserController.createUser
 );
+router.post(
+  "/update-adminuser",
+  [
+    check("username", "User Name should not be empty").isLength({ min: 1 }),
+    check("status", "status should not be empty").isLength({
+      min: 1,
+    }),
+    check("mobileNumber", "Mobile number should contains 10 digits").isLength({
+      min: 10,
+      max: 10,
+    }),
+    check("role", "role should not be empty").isLength({
+      min: 1,
+    }),
+    check("roleName", "Role name should not be empty").isLength({
+      min: 1,
+    }),
+  ],
+  isAuth,
+  adminUserController.updateUser
+);
+
+router.delete("/delete/:authUserId", isAuth, adminUserController.deleteUser);
 
 router.get("/get-roles", isAuth, adminUserController.getRoles);
 router.get("/get-users/:role", isAuth, adminUserController.getAllAdminUsers);
