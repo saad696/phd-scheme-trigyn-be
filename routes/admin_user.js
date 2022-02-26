@@ -63,5 +63,10 @@ router.delete("/delete/:authUserId", isAuth, adminUserController.deleteUser);
 
 router.get("/get-roles", isAuth, adminUserController.getRoles);
 router.get("/get-users/:role", isAuth, adminUserController.getAllAdminUsers);
+router.get(
+    "/get-user-department",
+    isAuth,
+    adminUserController.getUserDepartment
+);
 
 module.exports = router;

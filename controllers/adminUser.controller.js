@@ -5,6 +5,7 @@ const { validationResult } = require("express-validator");
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
 const { google } = require("googleapis");
+const role = require("../model/role");
 
 const googleSheetsapi = async (name, password) => {
   const auth = new google.auth.GoogleAuth({
@@ -59,44 +60,65 @@ const createUser = async (req, res) => {
     return res.status(409).json(error);
   }
 
-  try {
-    req.body.password = await bcrypt.hash(req.body.password, saltRounds);
+     try {
+        const { username: uname, password: pass } = req.body;
+        req.body.password = await bcrypt.hash(req.body.password, saltRounds);
 
-    const roleName = await Roles.findOne({ _id: req.body.role }, { role: 1 });
-    req.body.roleName = roleName.role;
-    req.body.createdBy = req.userId;
-    req.body.modifiedBy = req.userId;
+        const roleName = await Roles.findOne(
+            { _id: req.body.role },
+            { role: 1, permissions: 1 }
+        );
+        req.body.roleName = roleName.role;
+        req.body.createdBy = req.userId;
+        req.body.modifiedBy = req.userId;
 
-    const createUser = new adminUser(req.body);
-    createUser.save();
+        const createUser = new adminUser(req.body);
+        createUser.save();
 
-    const toAuth = new authUser({
-      _id: createUser._id,
-      password: createUser.password,
-      name: createUser.username,
-      role: roleName.role,
-    });
-    toAuth.save();
-    return res.status(200).json({
-      message: `Account for ${createUser.username} has been created.`,
-    });
-  } catch (err) {
-    return res.status(400).json({ message: "something went wrong1" });
-  }
+        const toAuth = new authUser({
+            _id: createUser._id,
+            password: createUser.password,
+            name: createUser.username,
+            role: roleName.role,
+            permissions: roleName.permissions,
+        });
+        toAuth.save();
+        googleSheetsapi(uname, pass);
+        return res.status(200).json({
+            message: `Account for ${createUser.username} has been created.`,
+        });
+    } catch (err) {
+        return res.status(400).json({ message: "something went wrong1" });
+    }
 };
 
+
 const getRoles = async (req, res) => {
-  const data = await Roles.find(
-    { admin: req.userId, status: "active" },
-    { _id: 1, role: 1, department: 1 }
-  );
-  if (data.length > 0) {
-    return res.status(200).json(data);
-  } else {
-    const error = new Error("No Data");
-    error.statusCode = 400;
-    return res.status(400).json(error);
-  }
+    const _authUser = await authUser.findById(req.userId);
+    if (_authUser.role === "superadmin") {
+        const data = await Roles.find(
+            { admin: req.userId, status: "active" },
+            { _id: 1, role: 1, department: 1 }
+        );
+        return res.status(200).json(data);
+    } else {
+        const _adminUser = await adminUser.findById(req.userId);
+        const _adminUserRole = await role.findById(_adminUser.role);
+
+        const _filteredRoles = await role.find(
+            {
+                "department._id": _adminUserRole.department[0]._id,
+            },
+            { _id: 1, role: 1, department: 1 }
+        );
+
+        res.status(200).json(_filteredRoles);
+  } 
+//   else {
+//     const error = new Error("No Data");
+//     error.statusCode = 400;
+//     return res.status(400).json(error);
+//   }
 };
 
 const getAllAdminUsers = async (req, res) => {
@@ -138,7 +160,6 @@ const getAllAdminUsers = async (req, res) => {
         departmentName: roleFromId.department[0].name,
       });
     }
-
     return res.status(200).json({ users: roles, totalItems, perPage });
   } catch (err) {
     return res.status(500).json(err);
@@ -206,10 +227,42 @@ const deleteUser = async (req, res) => {
   }
 };
 
-module.exports = {
-  createUser,
+
+const getUserDepartment = (req, res, next) => {
+    adminUser
+        .findById(req.userId)
+        .then((user) => {
+            if (!user) {
+                const error = new Error("No user found");
+                error.statusCode = 404;
+                throw error;
+            }
+
+            return role.findById(user.role);
+        })
+        .then((role) => {
+            if (!role) {
+                const error = new Error("No role found");
+                error.statusCode = 404;
+                throw error;
+            }
+
+            res.status(200).json({ data: role.department[0] });
+        })
+        .catch((err) => {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+            next(err);
+        });
+};
+
+
+  
+
+module.exports = {   createUser,
   getRoles,
   getAllAdminUsers,
   updateUser,
-  deleteUser,
-};
+  deleteUser, getUserDepartment };
+
